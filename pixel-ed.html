@@ -208,8 +208,10 @@
     });
 
     let scene = new Scene(ctx, {w: 800, h: 600});
-    scene.add(new Grid(ctx, {x: 0, y: 0, raws: 32, cols: 32, size: 16}));
-    scene.add(new Palette(ctx, {x: 640, y: 0, raws: 16, cols: 1, size: 32}));
+    let grid = new Grid(ctx, {x: 0, y: 0, raws: 32, cols: 32, size: 16});
+    let palette = new Palette(ctx, {x: grid.w + 10, y: 0, raws: 16, cols: 1, size: 32});
+    scene.add(grid);
+    scene.add(palette);
     scene.draw();
   }
   window.addEventListener('load', init);
