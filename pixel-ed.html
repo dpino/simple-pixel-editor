@@ -65,14 +65,15 @@
       canvas.addEventListener('click', function(e) {
         let [x, y] = [e.offsetX, e.offsetY];
         if (grid.contains(x, y)) {
-          grid.paintPixel(x, y);
+          console.log(e.ctrlKey);
+          grid.paintPixel(x, y, {ctrlKey: e.ctrlKey});
         }
       });
       canvas.addEventListener('mousemove', function(e) {
         let [x, y] = [e.offsetX, e.offsetY];
         let margin = {x: 3, y: 4};
         if (mouseClicked && grid.contains(x, y)) {
-          grid.paintPixel(x, y, margin);
+          grid.paintPixel(x, y, {margin: margin, ctrlKey: e.ctrlKey});
         }
       });
     }
@@ -100,19 +101,25 @@
       }
     }
 
-    paintPixel(x, y, margin) {
+    paintPixel(x, y, opts) {
       let [ctx, size] = [this.ctx, this.size];
       let xo = Number.parseInt(x / size) * size;
       let yo = Number.parseInt(y / size) * size;
-      if (margin) {
+      if (opts.margin) {
+        let margin = opts.margin;
         let area = {x: xo + margin.x, y: yo + margin.y,
                     w: this.w - margin.x, h: this.h - margin.y};
         if (!isWithin({x: x, y: y}, area)) {
           return;
         }
       }
-      ctx.fillStyle = selectedColor;
-      ctx.fillRect(xo, yo, size, size);
+      if (opts.ctrlKey) {
+        ctx.fillStyle = 'rgb(0,0,0)';
+        ctx.fillRect(xo+1, yo+1, size-2, size-2);
+      } else {
+        ctx.fillStyle = selectedColor;
+        ctx.fillRect(xo+1, yo+1, size-2, size-2);
+      }
     }
 
     contains(x, y) {
