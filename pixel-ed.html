@@ -178,7 +178,6 @@
         this.w = args.cols * args.size;
         this.h = args.raws * args.size;
       }
-      console.log([this.w, this.h, this.size]);
       this.colors = [];
       this.current = 0;
 
@@ -199,9 +198,9 @@
     }
 
     draw() {
-      let [ctx, x, h, w] = [this.ctx, this.x, this.h, this.w];
+      let [ctx, x, y, h, w] = [this.ctx, this.x, this.y, this.h, this.w];
       let stride = Math.floor(h / w) + 1;
-      for (let i = 0, j = 0; i < h; i += w, j++) {
+      for (let i = y, j = 0; i < y + h; i += w, j++) {
         let color = this.randomColor(j * stride, (j + 1) * stride);
         this.colors[j] = color;
         ctx.fillStyle = rgb(color);
@@ -209,19 +208,19 @@
         ctx.strokeStyle = 'rgba(127, 127, 127, 1)';
         ctx.strokeRect(x, i, w, w);
       }
-      this.selectColor(this.x, 0)
+      this.selectColor(x, 0);
     }
 
     selectColor(x, y) {
       let [ctx, size] = [this.ctx, this.size];
       let that = this;
       function highlight(current) {
-        let y = current * size;
+        let y = that.y + (current * size);
         ctx.strokeStyle = 'rgba(255, 192, 0, 1)';
         ctx.strokeRect(that.x, y, size, size);
       }
       function unhighlight(current) {
-        let y = current * size;
+        let y = that.y + (current * size);
         ctx.fillStyle = rgb(that.colors[current]);
         ctx.fillRect(that.x, y, size, size);
         ctx.strokeStyle = 'rgba(127, 127, 127, 1)';
@@ -253,10 +252,12 @@
     let scene = new Scene(ctx, {w: 800, h: 600});
     let grid = new Grid(ctx, {x: 0, y: 0, raws: 32, cols: 32, size: 16});
     let palette = new Palette(ctx, {x: grid.w + 10, y: 0, raws: 16, cols: 1, size: 32});
+    let background = new Palette(ctx, {x: (palette.x + palette.w) + 10, y: grid.h - 32, raws: 1, cols: 1, size: 32});
     let preview = new Preview(ctx, {x: (palette.x + palette.w) + 10, y: 0, grid: grid, ratio: 0.25});
     scene.add(grid);
     scene.add(palette);
     scene.add(preview);
+    scene.add(background);
     scene.draw();
   }
   window.addEventListener('load', init);
