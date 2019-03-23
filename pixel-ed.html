@@ -9,8 +9,6 @@
 </body>
 
 <script>
-  let foregroundColor;
-  let backgroundColor = [0, 0, 0];
   let mouseClicked;
 
   function isWithin(p, area) {
@@ -73,7 +71,7 @@
     }
 
     draw() {
-      this.ctx.fillStyle = rgb(backgroundColor);
+      this.ctx.fillStyle = rgb(this.background.selectedColor);
       this.ctx.fillRect(this.x, this.y, this.w, this.h);
     }
   }
@@ -120,7 +118,7 @@
     draw() {
       let [ctx, x, y, w, h] = [this.ctx, this.x, this.y, this.w, this.h]
 
-      ctx.fillStyle = rgb(backgroundColor);
+      ctx.fillStyle = rgb(this.background.selectedColor);
       ctx.fillRect(x, y, w, h);
 
       // Horizontal lines.
@@ -152,8 +150,8 @@
           return;
         }
       }
-      let color = (opts.ctrlKey) ? backgroundColor : foregroundColor;
-      ctx.fillStyle = rgb(foregroundColor);
+      let color = (opts.ctrlKey) ? this.background.selectedColor : this.palette.selectedColor;
+      ctx.fillStyle = rgb(color);
       ctx.fillRect(xo+1, yo+1, size-2, size-2);
       this.pixels[x][y] = color;
       this.preview.paintPixel(x, y, color);
@@ -180,12 +178,13 @@
       }
       this.colors = [];
       this.current = 0;
+      this.selectedColor = [0, 0, 0];
 
       let palette = this;
       ctx.canvas.addEventListener('click', function(e) {
         let [x, y] = [e.offsetX, e.offsetY];
         if (palette.contains(x, y)) {
-          foregroundColor = palette.selectColor(x, y);
+          palette.selectedColor = palette.selectColor(x, y);
         }
       });
     }
@@ -208,7 +207,7 @@
         ctx.strokeStyle = 'rgba(127, 127, 127, 1)';
         ctx.strokeRect(x, i, w, w);
       }
-      foregroundColor = this.selectColor(x, 0);
+      this.selectedColor = this.selectColor(x, 0);
     }
 
     selectColor(x, y) {
@@ -252,7 +251,9 @@
     let grid = new Grid(ctx, {x: 0, y: 0, raws: 32, cols: 32, size: 16});
     let palette = new Palette(ctx, {x: grid.w + 10, y: 0, raws: 16, cols: 1, size: 32});
     let background = new Palette(ctx, {x: (palette.x + palette.w) + 10, y: grid.h - 32, raws: 1, cols: 1, size: 32});
+    [grid.palette, grid.background] = [palette, background];
     let preview = new Preview(ctx, {x: (palette.x + palette.w) + 10, y: 0, grid: grid, ratio: 0.25});
+    preview.background = background;
     scene.add(grid);
     scene.add(palette);
     scene.add(preview);
