@@ -185,7 +185,7 @@
       ctx.canvas.addEventListener('click', function(e) {
         let [x, y] = [e.offsetX, e.offsetY];
         if (palette.contains(x, y)) {
-          palette.selectColor(x, y);
+          foregroundColor = palette.selectColor(x, y);
         }
       });
     }
@@ -208,7 +208,7 @@
         ctx.strokeStyle = 'rgba(127, 127, 127, 1)';
         ctx.strokeRect(x, i, w, w);
       }
-      this.selectColor(x, 0);
+      foregroundColor = this.selectColor(x, 0);
     }
 
     selectColor(x, y) {
@@ -229,8 +229,7 @@
       unhighlight(this.current);
       this.current = Number.parseInt(y / size);
       highlight(this.current);
-      foregroundColor = this.colors[this.current];
-      return foregroundColor;
+      return this.colors[this.current];
     }
 
     contains(x, y) {
