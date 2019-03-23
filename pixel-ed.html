@@ -50,8 +50,15 @@
       this.ctx = ctx;
       this.x = args.x;
       this.y = args.y;
-      this.w = args.w;
-      this.h = args.h;
+      if (args.w && args.h) {
+        this.w = args.w;
+        this.h = args.h;
+        this.size = 16;
+      } else {
+        this.size = args.size;
+        this.w = args.cols * args.size;
+        this.h = args.raws * args.size;
+      }
 
       let canvas = ctx.canvas;
       let grid = this;
@@ -63,7 +70,7 @@
       });
       canvas.addEventListener('mousemove', function(e) {
         let [x, y] = [e.offsetX, e.offsetY];
-        let margin = {x: 2, y: 2};
+        let margin = {x: 3, y: 4};
         if (mouseClicked && grid.contains(x, y)) {
           grid.paintPixel(x, y, margin);
         }
@@ -78,14 +85,14 @@
 
       // Horizontal lines.
       ctx.strokeStyle = 'rgb(127, 127, 127)';
-      for (let i = 0; i < h; i += 16) {
+      for (let i = 0; i < h; i += this.size) {
         ctx.beginPath();
         ctx.moveTo(0, i);
         ctx.lineTo(w, i);
         ctx.stroke();
       }
       // Vertical lines.
-      for (let i = 0; i < w; i += 16) {
+      for (let i = 0; i < w; i += this.size) {
         ctx.beginPath();
         ctx.moveTo(i, 0);
         ctx.lineTo(i, h);
@@ -94,9 +101,9 @@
     }
 
     paintPixel(x, y, margin) {
-      let [ctx, w] = [this.ctx, 16];
-      let xo = Number.parseInt(x / w) * w;
-      let yo = Number.parseInt(y / w) * w;
+      let [ctx, size] = [this.ctx, this.size];
+      let xo = Number.parseInt(x / size) * size;
+      let yo = Number.parseInt(y / size) * size;
       if (margin) {
         let area = {x: xo + margin.x, y: yo + margin.y,
                     w: this.w - margin.x, h: this.h - margin.y};
@@ -105,7 +112,7 @@
         }
       }
       ctx.fillStyle = selectedColor;
-      ctx.fillRect(xo, yo, w, w);
+      ctx.fillRect(xo, yo, size, size);
     }
 
     contains(x, y) {
@@ -118,8 +125,16 @@
       this.ctx = ctx;
       this.x = args.x;
       this.y = args.y;
-      this.w = args.w;
-      this.h = args.h;
+      if (args.w && args.h) {
+        this.w = args.w;
+        this.h = args.h;
+        this.size = 32;
+      } else {
+        this.size = args.size;
+        this.w = args.cols * args.size;
+        this.h = args.raws * args.size;
+      }
+      console.log([this.w, this.h, this.size]);
       this.colors = [];
       this.current = 0;
 
@@ -155,22 +170,22 @@
     }
 
     selectColor(x, y) {
-      let [ctx, w] = [this.ctx, 32];
+      let [ctx, size] = [this.ctx, this.size];
       let that = this;
       function highlight(current) {
-        let y = current * w;
+        let y = current * size;
         ctx.strokeStyle = 'rgba(255, 192, 0, 1)';
-        ctx.strokeRect(that.x, y, w, w);
+        ctx.strokeRect(that.x, y, size, size);
       }
       function unhighlight(current) {
-        let y = current * w;
+        let y = current * size;
         ctx.fillStyle = that.colors[current];
-        ctx.fillRect(that.x, y, w, w);
+        ctx.fillRect(that.x, y, size, size);
         ctx.strokeStyle = 'rgba(127, 127, 127, 1)';
-        ctx.strokeRect(that.x, y, w, w);
+        ctx.strokeRect(that.x, y, size, size);
       }
       unhighlight(this.current);
-      this.current = Number.parseInt(y / w);
+      this.current = Number.parseInt(y / size);
       highlight(this.current);
       selectedColor = this.colors[this.current];
       return selectedColor;
@@ -193,8 +208,8 @@
     });
 
     let scene = new Scene(ctx, {w: 800, h: 600});
-    scene.add(new Grid(ctx, {x: 0, y: 0, w: 640, h: 480}));
-    scene.add(new Palette(ctx, {x: 640, y: 0, w: 32, h: 480}));
+    scene.add(new Grid(ctx, {x: 0, y: 0, raws: 32, cols: 32, size: 16}));
+    scene.add(new Palette(ctx, {x: 640, y: 0, raws: 16, cols: 1, size: 32}));
     scene.draw();
   }
   window.addEventListener('load', init);
