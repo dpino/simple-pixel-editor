@@ -66,8 +66,8 @@
 
     paintPixel(x, y, color) {
       let [ctx, w, h] = [this.ctx, this.w, this.h];
-      x = (x - this.grid.x) / this.size;
-      y = (y - this.grid.y) / this.size;
+      x = Number.parseInt((x - this.grid.x) / this.grid.size) * this.size;
+      y = Number.parseInt((y - this.grid.y) / this.grid.size) * this.size;
       ctx.fillStyle = rgb(color);
       ctx.fillRect(this.x + x, this.y + y, this.size, this.size);
     }
