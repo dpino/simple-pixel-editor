@@ -9,7 +9,8 @@
 </body>
 
 <script>
-  let selectedColor;
+  let foregroundColor;
+  let backgroundColor = [0, 0, 0];
   let mouseClicked;
 
   function isWithin(p, area) {
@@ -72,7 +73,7 @@
     }
 
     draw() {
-      this.ctx.fillStyle = 'rgb(0, 0, 0)';
+      this.ctx.fillStyle = rgb(backgroundColor);
       this.ctx.fillRect(this.x, this.y, this.w, this.h);
     }
   }
@@ -119,7 +120,7 @@
     draw() {
       let [ctx, x, y, w, h] = [this.ctx, this.x, this.y, this.w, this.h]
 
-      ctx.fillStyle = 'rgb(0, 0, 0)';
+      ctx.fillStyle = rgb(backgroundColor);
       ctx.fillRect(x, y, w, h);
 
       // Horizontal lines.
@@ -151,8 +152,8 @@
           return;
         }
       }
-      let color = (opts.ctrlKey) ? [0, 0, 0] : selectedColor;
-      ctx.fillStyle = rgb(selectedColor);
+      let color = (opts.ctrlKey) ? backgroundColor : foregroundColor;
+      ctx.fillStyle = rgb(foregroundColor);
       ctx.fillRect(xo+1, yo+1, size-2, size-2);
       this.pixels[x][y] = color;
       this.preview.paintPixel(x, y, color);
@@ -229,8 +230,8 @@
       unhighlight(this.current);
       this.current = Number.parseInt(y / size);
       highlight(this.current);
-      selectedColor = this.colors[this.current];
-      return selectedColor;
+      foregroundColor = this.colors[this.current];
+      return foregroundColor;
     }
 
     contains(x, y) {
