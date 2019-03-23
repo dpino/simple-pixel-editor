@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title></title>
+</head>
+<body>
+  <canvas id="canvas" width="800" height="600" style="border: 1px black solid" />
+</body>
+
+<script>
+  let selectedColor;
+  let mouseClicked;
+
+  function isWithin(p, area) {
+    return area.x < p.x && p.x < (area.x + area.w) &&
+           area.y < p.y && p.y < (area.y + area.h);
+  }
+
+  class Scene {
+    constructor(ctx, w, h) {
+      this.ctx = ctx;
+      this.w = w;
+      this.h = h;
+      this.objects = [];
+    }
+
+    draw() {
+      this.objects.forEach(function(o) {
+        o.draw();
+      });
+    }
+
+    add(obj) {
+      this.objects.push(obj);
+    }
+
+    select(x, y) {
+      for (let i = 0; i < this.objects.length; i++) {
+        let o = this.objects[i]
+        if (contains(o, x, y)) {
+          return o;
+        }
+      }
+    }
+  }
+
+  class Grid {
+    constructor(ctx, args) {
+      this.ctx = ctx;
+      this.x = args.x;
+      this.y = args.y;
+      this.w = args.w;
+      this.h = args.h;
+
+      let canvas = ctx.canvas;
+      let grid = this;
+      canvas.addEventListener('click', function(e) {
+        let [x, y] = [e.offsetX, e.offsetY];
+        if (grid.contains(x, y)) {
+          grid.paintPixel(x, y);
+        }
+      });
+      canvas.addEventListener('mousemove', function(e) {
+        let [x, y] = [e.offsetX, e.offsetY];
+        let margin = {x: 2, y: 2};
+        if (mouseClicked && grid.contains(x, y)) {
+          grid.paintPixel(x, y, margin);
+        }
+      });
+    }
+
+    draw() {
+      let [ctx, x, y, w, h] = [this.ctx, this.x, this.y, this.w, this.h]
+
+      ctx.fillStyle = 'rgb(0, 0, 0)';
+      ctx.fillRect(x, y, w, h);
+
+      // Horizontal lines.
+      ctx.strokeStyle = 'rgb(127, 127, 127)';
+      for (let i = 0; i < h; i += 16) {
+        ctx.beginPath();
+        ctx.moveTo(0, i);
+        ctx.lineTo(w, i);
+        ctx.stroke();
+      }
+      // Vertical lines.
+      for (let i = 0; i < w; i += 16) {
+        ctx.beginPath();
+        ctx.moveTo(i, 0);
+        ctx.lineTo(i, h);
+        ctx.stroke();
+      }
+    }
+
+    paintPixel(x, y, margin) {
+      let [ctx, w] = [this.ctx, 16];
+      let xo = Number.parseInt(x / w) * w;
+      let yo = Number.parseInt(y / w) * w;
+      if (margin) {
+        let area = {x: xo + margin.x, y: yo + margin.y,
+                    w: this.w - margin.x, h: this.h - margin.y};
+        if (!isWithin({x: x, y: y}, area)) {
+          return;
+        }
+      }
+      ctx.fillStyle = selectedColor;
+      ctx.fillRect(xo, yo, w, w);
+    }
+
+    contains(x, y) {
+      return isWithin({x: x, y: y}, this);
+    }
+  }
+
+  class Palette {
+    constructor(ctx, args) {
+      this.ctx = ctx;
+      this.x = args.x;
+      this.y = args.y;
+      this.w = args.w;
+      this.h = args.h;
+      this.colors = [];
+      this.current = 0;
+
+      let palette = this;
+      ctx.canvas.addEventListener('click', function(e) {
+        let [x, y] = [e.offsetX, e.offsetY];
+        if (palette.contains(x, y)) {
+          palette.selectColor(x, y);
+        }
+      });
+    }
+
+    randomColor(min, max) {
+      function random() {
+        return min + Math.floor(Math.random() * (max - min));
+      }
+      let p = [random(), random(), random()];
+      return 'rgb(' + p.join(', ') + ')';
+    }
+
+    draw() {
+      let [ctx, x, h, w] = [this.ctx, this.x, this.h, this.w];
+      let stride = Math.floor(h / w) + 1;
+      for (let i = 0, j = 0; i < h; i += w, j++) {
+        let color = this.randomColor(j * stride, (j + 1) * stride);
+        this.colors[j] = (color);
+        ctx.fillStyle = color;
+        ctx.fillRect(x, i, w, w);
+        ctx.strokeStyle = 'rgba(127, 127, 127, 1)';
+        ctx.strokeRect(x, i, w, w);
+      }
+      this.selectColor(this.x, 0)
+    }
+
+    selectColor(x, y) {
+      let [ctx, w] = [this.ctx, 32];
+      let that = this;
+      function highlight(current) {
+        let y = current * w;
+        ctx.strokeStyle = 'rgba(255, 192, 0, 1)';
+        ctx.strokeRect(that.x, y, w, w);
+      }
+      function unhighlight(current) {
+        let y = current * w;
+        ctx.fillStyle = that.colors[current];
+        ctx.fillRect(that.x, y, w, w);
+        ctx.strokeStyle = 'rgba(127, 127, 127, 1)';
+        ctx.strokeRect(that.x, y, w, w);
+      }
+      unhighlight(this.current);
+      this.current = Number.parseInt(y / w);
+      highlight(this.current);
+      selectedColor = this.colors[this.current];
+      return selectedColor;
+    }
+
+    contains(x, y) {
+      return isWithin({x: x, y: y}, this);
+    }
+  }
+
+  function init() {
+    let canvas = document.getElementById('canvas');
+    let ctx = canvas.getContext('2d');
+
+    canvas.addEventListener('mouseup', function(e) {
+      mouseClicked = false;
+    });
+    canvas.addEventListener('mousedown', function(e) {
+      mouseClicked = true;
+    });
+
+    let scene = new Scene(ctx, {w: 800, h: 600});
+    scene.add(new Grid(ctx, {x: 0, y: 0, w: 640, h: 480}));
+    scene.add(new Palette(ctx, {x: 640, y: 0, w: 32, h: 480}));
+    scene.draw();
+  }
+  window.addEventListener('load', init);
+</script>
+</html>
