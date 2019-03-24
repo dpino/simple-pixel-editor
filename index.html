@@ -177,8 +177,9 @@
         this.h = args.raws * args.size;
       }
       this.colors = [];
-      this.current = 0;
-      this.selectedColor = [0, 0, 0];
+      this.selectedColorPos = 0;
+      this.setSeedColor([0, 0, 0]);
+      this.selectedColor = this.colors[this.selectedColorPos];
 
       let palette = this;
       ctx.canvas.addEventListener('click', function(e) {
@@ -187,6 +188,28 @@
           palette.selectedColor = palette.selectColor(x, y);
         }
       });
+    }
+
+    setSeedColor(c) {
+      function ratio(val) {
+        return Math.floor((255 - val)/15);
+      }
+      function copy(c) {
+        return [c[0], c[1], c[2]];
+      }
+      function inc(c, r) {
+        for (let i = 0; i < 3; i++) {
+          c[i] = c[i] + r[i];
+        }
+        return c;
+      }
+      let r = [ratio(c[0]), ratio(c[1]), ratio(c[2])];
+      this.colors[0] = copy(c);
+      for (let i = 1; i < 16; i++) {
+        c = inc(c, r);
+        this.colors[i] = copy(c);
+      }
+      this.draw();
     }
 
     randomColor(min, max) {
@@ -200,9 +223,7 @@
       let [ctx, x, y, h, w] = [this.ctx, this.x, this.y, this.h, this.w];
       let stride = Math.floor(h / w) + 1;
       for (let i = y, j = 0; i < y + h; i += w, j++) {
-        let color = this.randomColor(j * stride, (j + 1) * stride);
-        this.colors[j] = color;
-        ctx.fillStyle = rgb(color);
+        ctx.fillStyle = rgb(this.colors[j]);
         ctx.fillRect(x, i, w, w);
         ctx.strokeStyle = 'rgba(127, 127, 127, 1)';
         ctx.strokeRect(x, i, w, w);
@@ -213,26 +234,86 @@
     selectColor(x, y) {
       let [ctx, size] = [this.ctx, this.size];
       let that = this;
-      function highlight(current) {
-        let y = that.y + (current * size);
+      function highlight(pos) {
+        let y = that.y + (pos * size);
         ctx.strokeStyle = 'rgba(255, 192, 0, 1)';
         ctx.strokeRect(that.x, y, size, size);
       }
-      function unhighlight(current) {
-        let y = that.y + (current * size);
-        ctx.fillStyle = rgb(that.colors[current]);
+      function unhighlight(pos) {
+        let y = that.y + (pos * size);
+        ctx.fillStyle = rgb(that.colors[pos]);
         ctx.fillRect(that.x, y, size, size);
         ctx.strokeStyle = 'rgba(127, 127, 127, 1)';
         ctx.strokeRect(that.x, y, size, size);
       }
-      unhighlight(this.current);
-      this.current = Number.parseInt(y / size);
-      highlight(this.current);
-      return this.colors[this.current];
+      unhighlight(this.selectedColorPos);
+      this.selectedColorPos = Number.parseInt(y / size);
+      highlight(this.selectedColorPos);
+      return this.colors[this.selectedColorPos];
     }
 
     contains(x, y) {
       return isWithin({x: x, y: y}, this);
+    }
+  }
+
+  function readPixel(ctx, x, y) {
+    let data = ctx.getImageData(x, y, 1, 1).data;
+    return [data[0], data[1], data[2]];
+  }
+
+  class Slider {
+    constructor(ctx, args) {
+      this.ctx = ctx;
+      this.x = args.x;
+      this.y = args.y;
+      this.w = args.w;
+      this.h = args.h;
+      this.pos = args.y;
+      this.selectedColor = 'black';
+
+      let slider = this;
+      ctx.canvas.addEventListener('mousedown', function(e) {
+        let [x, y] = [e.offsetX, e.offsetY];
+        if (isWithin({x: x, y: y}, slider)) {
+          slider.selectedColor = readPixel(slider.ctx, e.x, e.y);
+          console.log(e.x, e.y);
+          slider.pos = y;
+          slider.draw();
+          slider.palette.setSeedColor(slider.selectedColor);
+          slider.palette.draw();
+        }
+      });
+    }
+
+    draw() {
+      let [ctx, x, y, w, h] = [this.ctx, this.x, this.y, this.w, this.h];
+
+      // Border.
+      ctx.strokeStyle = 'black';
+      ctx.strokeRect(x, y, w, h);
+
+      // Draw gradient.
+      let gradient = ctx.createLinearGradient(0, y, 0, y + h);
+      let colors = ["red", "purple", "blue", "cyan", "green", "yellow", "orange", "red"];
+      let stride = 1 / (colors.length - 1);
+      colors.forEach(function(val, i) {
+        gradient.addColorStop(i*stride, val);
+      });
+      ctx.fillStyle = gradient;
+      ctx.fillRect(x, y, w, h);
+
+      this.drawHandler();
+    }
+
+    drawHandler() {
+      let [ctx, x, y, w, h] = [this.ctx, this.x, this.y, this.w, this.h];
+
+      ctx.clearRect(this.x, this.pos, this.w, 2);
+      ctx.strokeStyle = 'white';
+      ctx.strokeRect(this.x, this.pos, this.w, 2);
+      ctx.fillStyle = 'black';
+      ctx.fillRect(this.x, this.pos, this.w, 1);
     }
   }
 
@@ -250,14 +331,18 @@
     let scene = new Scene(ctx, {w: 800, h: 600});
     let grid = new Grid(ctx, {x: 0, y: 0, raws: 32, cols: 32, size: 16});
     let palette = new Palette(ctx, {x: grid.w + 10, y: 0, raws: 16, cols: 1, size: 32});
+    let slider = new Slider(ctx, {x: (palette.x + palette.w) + 10, y: 140, w: 24, h: 250});
+    slider.palette = palette;
     let background = new Palette(ctx, {x: (palette.x + palette.w) + 10, y: grid.h - 32, raws: 1, cols: 1, size: 32});
     [grid.palette, grid.background] = [palette, background];
     let preview = new Preview(ctx, {x: (palette.x + palette.w) + 10, y: 0, grid: grid, ratio: 0.25});
     preview.background = background;
+
     scene.add(grid);
     scene.add(palette);
     scene.add(preview);
     scene.add(background);
+    scene.add(slider);
     scene.draw();
   }
   window.addEventListener('load', init);
