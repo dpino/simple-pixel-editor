@@ -1,3 +1,3 @@
-## Pixel-ed
+## Simple-pixel-editor
 
-A simple Pixel Editor using Canvas.
+A simple pixel editor using Canvas.
